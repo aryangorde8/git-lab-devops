@@ -180,3 +180,4 @@ app.listen(PORT, '0.0.0.0', () => {
 
 // Start MySQL connection with retry
 connectWithRetry();
+// Feature by Aryan: Added health check endpoint
