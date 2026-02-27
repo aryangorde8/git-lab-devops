@@ -174,6 +174,7 @@ The API calls go through nginx reverse proxy:
         const res = await fetch(API + '/create-table', { method: 'POST' });
         const data = await res.json();
         showResult(data);
+        if (res.ok) await fetchUsers();
       } catch (err) { showError(err); }
     }
 
@@ -190,6 +191,7 @@ The API calls go through nginx reverse proxy:
         });
         const data = await res.json();
         showResult(data);
+        if (res.ok) await fetchUsers();
         document.getElementById('addName').value = '';
         document.getElementById('addEmail').value = '';
       } catch (err) { showError(err); }
@@ -230,6 +232,7 @@ The API calls go through nginx reverse proxy:
         });
         const data = await res.json();
         showResult(data);
+        if (res.ok) await fetchUsers();
       } catch (err) { showError(err); }
     }
 
@@ -241,6 +244,7 @@ The API calls go through nginx reverse proxy:
         const res = await fetch(API + '/delete-user/' + id, { method: 'DELETE' });
         const data = await res.json();
         showResult(data);
+        if (res.ok) await fetchUsers();
       } catch (err) { showError(err); }
     }
   </script>
