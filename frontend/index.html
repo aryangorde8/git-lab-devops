@@ -1,0 +1,248 @@
+<!--
+============================================
+Frontend - Kubernetes Multi-Container Pod Lab
+============================================
+This is a simple HTML + JavaScript page that
+calls the backend REST API for CRUD operations
+on the "users" table in MySQL.
+
+The API calls go through nginx reverse proxy:
+  Browser -> nginx (port 80) -> backend (port 3000)
+============================================
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kubernetes CRUD App</title>
+  <style>
+    /* Simple styling for the lab */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #326ce5; /* Kubernetes blue */
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 30px;
+    }
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .card h2 {
+      color: #333;
+      margin-bottom: 15px;
+      font-size: 18px;
+    }
+    input {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin-right: 10px;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+    button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+      margin: 5px;
+    }
+    .btn-create  { background: #28a745; }   /* Green */
+    .btn-add     { background: #326ce5; }   /* Blue */
+    .btn-fetch   { background: #17a2b8; }   /* Teal */
+    .btn-update  { background: #ffc107; color: #333; } /* Yellow */
+    .btn-delete  { background: #dc3545; }   /* Red */
+    button:hover { opacity: 0.85; }
+    #result {
+      background: #1e1e1e;
+      color: #0f0;
+      padding: 15px;
+      border-radius: 4px;
+      min-height: 100px;
+      font-family: monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      margin-top: 15px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    table th, table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    table th { background: #326ce5; color: white; }
+    table tr:nth-child(even) { background: #f2f2f2; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>&#9781; Kubernetes CRUD App</h1>
+    <p class="subtitle">Multi-Container Pod: nginx + Node.js + MySQL</p>
+
+    <!-- Card 1: Create Table -->
+    <div class="card">
+      <h2>1. Create Table</h2>
+      <p>Initialize the "users" table in MySQL</p><br>
+      <button class="btn-create" onclick="createTable()">Create Table</button>
+    </div>
+
+    <!-- Card 2: Add User -->
+    <div class="card">
+      <h2>2. Add User</h2>
+      <input type="text" id="addName" placeholder="Name">
+      <input type="email" id="addEmail" placeholder="Email"><br>
+      <button class="btn-add" onclick="addUser()">Add User</button>
+    </div>
+
+    <!-- Card 3: Fetch Users -->
+    <div class="card">
+      <h2>3. Fetch All Users</h2>
+      <button class="btn-fetch" onclick="fetchUsers()">Fetch Users</button>
+      <div id="usersTable"></div>
+    </div>
+
+    <!-- Card 4: Update User -->
+    <div class="card">
+      <h2>4. Update User</h2>
+      <input type="number" id="updateId" placeholder="User ID" style="width:80px">
+      <input type="text" id="updateName" placeholder="New Name">
+      <input type="email" id="updateEmail" placeholder="New Email"><br>
+      <button class="btn-update" onclick="updateUser()">Update User</button>
+    </div>
+
+    <!-- Card 5: Delete User -->
+    <div class="card">
+      <h2>5. Delete User</h2>
+      <input type="number" id="deleteId" placeholder="User ID" style="width:80px">
+      <button class="btn-delete" onclick="deleteUser()">Delete User</button>
+    </div>
+
+    <!-- Result Display -->
+    <div class="card">
+      <h2>API Response</h2>
+      <div id="result">Waiting for action...</div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================
+    // API Base URL
+    // ============================================
+    // Since nginx reverse-proxies /api/* to the
+    // backend container, we use /api as the base.
+    // ============================================
+    const API = '/api';
+
+    // Helper function to show response
+    function showResult(data) {
+      document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+    }
+
+    // Helper function to show error
+    function showError(err) {
+      document.getElementById('result').textContent = 'ERROR: ' + err.message;
+    }
+
+    // ---- 1. Create Table ----
+    async function createTable() {
+      try {
+        const res = await fetch(API + '/create-table', { method: 'POST' });
+        const data = await res.json();
+        showResult(data);
+      } catch (err) { showError(err); }
+    }
+
+    // ---- 2. Add User ----
+    async function addUser() {
+      const name = document.getElementById('addName').value;
+      const email = document.getElementById('addEmail').value;
+      if (!name || !email) { alert('Please enter name and email'); return; }
+      try {
+        const res = await fetch(API + '/add-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email })
+        });
+        const data = await res.json();
+        showResult(data);
+        document.getElementById('addName').value = '';
+        document.getElementById('addEmail').value = '';
+      } catch (err) { showError(err); }
+    }
+
+    // ---- 3. Fetch Users ----
+    async function fetchUsers() {
+      try {
+        const res = await fetch(API + '/users');
+        const data = await res.json();
+        showResult(data);
+
+        // Build a nice HTML table
+        if (data.length > 0) {
+          let html = '<table><tr><th>ID</th><th>Name</th><th>Email</th></tr>';
+          data.forEach(u => {
+            html += `<tr><td>${u.id}</td><td>${u.name}</td><td>${u.email}</td></tr>`;
+          });
+          html += '</table>';
+          document.getElementById('usersTable').innerHTML = html;
+        } else {
+          document.getElementById('usersTable').innerHTML = '<p>No users found.</p>';
+        }
+      } catch (err) { showError(err); }
+    }
+
+    // ---- 4. Update User ----
+    async function updateUser() {
+      const id = document.getElementById('updateId').value;
+      const name = document.getElementById('updateName').value;
+      const email = document.getElementById('updateEmail').value;
+      if (!id || !name || !email) { alert('Please enter ID, name, and email'); return; }
+      try {
+        const res = await fetch(API + '/update-user/' + id, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email })
+        });
+        const data = await res.json();
+        showResult(data);
+      } catch (err) { showError(err); }
+    }
+
+    // ---- 5. Delete User ----
+    async function deleteUser() {
+      const id = document.getElementById('deleteId').value;
+      if (!id) { alert('Please enter User ID'); return; }
+      try {
+        const res = await fetch(API + '/delete-user/' + id, { method: 'DELETE' });
+        const data = await res.json();
+        showResult(data);
+      } catch (err) { showError(err); }
+    }
+  </script>
+</body>
+</html>

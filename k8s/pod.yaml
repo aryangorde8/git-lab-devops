@@ -1,0 +1,89 @@
+# ============================================
+# Kubernetes Pod Definition - Multi-Container Pod
+# ============================================
+# This YAML defines a single Pod with 3 containers:
+#   1. frontend  - nginx serving HTML + reverse proxy
+#   2. backend   - Node.js Express REST API
+#   3. mysql     - MySQL database
+#
+# KEY CONCEPT (for viva):
+#   All containers in a Pod share the SAME network
+#   namespace, so they communicate via "localhost".
+#   - Frontend (nginx) calls backend on localhost:3000
+#   - Backend calls MySQL on localhost:3306
+# ============================================
+
+# apiVersion: Specifies the Kubernetes API version
+apiVersion: v1
+
+# kind: The type of Kubernetes resource (Pod)
+kind: Pod
+
+# metadata: Information about the Pod
+metadata:
+  name: multi-container-app        # Name of our Pod
+  labels:
+    app: crud-app                  # Label used by Service to find this Pod
+
+# spec: The desired state of the Pod
+spec:
+
+  # ==========================================
+  # Container 1: Frontend (nginx)
+  # ==========================================
+  # Serves the HTML page and reverse-proxies
+  # API requests to the backend container.
+  # ==========================================
+  containers:
+
+  - name: frontend                         # Container name
+    image: frontend-app:latest             # Docker image we will build
+    imagePullPolicy: Never                 # Use local Minikube image (don't pull from Docker Hub)
+    ports:
+    - containerPort: 80                    # nginx listens on port 80
+      name: http                           # Port name for clarity
+
+  # ==========================================
+  # Container 2: Backend (Node.js + Express)
+  # ==========================================
+  # Runs the REST API server on port 3000.
+  # Connects to MySQL using localhost:3306.
+  # ==========================================
+  - name: backend                          # Container name
+    image: backend-app:latest              # Docker image we will build
+    imagePullPolicy: Never                 # Use local Minikube image
+    ports:
+    - containerPort: 3000                  # Express server listens on port 3000
+      name: api                            # Port name for clarity
+
+    # Environment variables for MySQL connection
+    # The backend reads these to connect to the database
+    env:
+    - name: DB_HOST
+      value: "localhost"                   # Same Pod = localhost
+    - name: DB_USER
+      value: "root"                        # MySQL root user
+    - name: DB_PASSWORD
+      value: "rootpass"                    # MySQL root password (matches MySQL container)
+    - name: DB_NAME
+      value: "mydb"                        # Database name (matches MySQL container)
+
+  # ==========================================
+  # Container 3: MySQL Database
+  # ==========================================
+  # Runs MySQL 8.0 with credentials set via
+  # environment variables.
+  # ==========================================
+  - name: mysql                            # Container name
+    image: mysql:8.0                       # Official MySQL image from Docker Hub
+    ports:
+    - containerPort: 3306                  # MySQL default port
+      name: mysql                          # Port name for clarity
+
+    # Environment variables to configure MySQL
+    # These are required by the official MySQL Docker image
+    env:
+    - name: MYSQL_ROOT_PASSWORD
+      value: "rootpass"                    # Root password (must match backend config)
+    - name: MYSQL_DATABASE
+      value: "mydb"                        # Auto-create this database on startup

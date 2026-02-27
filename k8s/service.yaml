@@ -1,0 +1,41 @@
+# ============================================
+# Kubernetes Service - NodePort
+# ============================================
+# A Service exposes Pods to the outside world.
+#
+# KEY CONCEPT (for viva):
+#   - ClusterIP: Only accessible inside the cluster
+#   - NodePort:  Accessible from outside using
+#                <NodeIP>:<NodePort>
+#   - LoadBalancer: For cloud providers (AWS, GCP)
+#
+# We use NodePort so we can access the frontend
+# from our browser via Minikube.
+# ============================================
+
+# apiVersion: Specifies the Kubernetes API version
+apiVersion: v1
+
+# kind: The type of Kubernetes resource (Service)
+kind: Service
+
+# metadata: Information about the Service
+metadata:
+  name: crud-app-service           # Name of the Service
+
+# spec: The desired state of the Service
+spec:
+  type: NodePort                   # Expose outside the cluster
+
+  # selector: Finds Pods with matching labels
+  # This connects the Service to our Pod
+  selector:
+    app: crud-app                  # Must match Pod's label
+
+  # ports: Define port mappings
+  ports:
+  - protocol: TCP
+    port: 80                       # Service port (internal)
+    targetPort: 80                 # Container port (nginx frontend)
+    nodePort: 30080                # External port (access via browser)
+                                   # Range allowed: 30000-32767
