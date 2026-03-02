@@ -37,7 +37,7 @@ spec:
   containers:
 
   - name: frontend                         # Container name
-    image: frontend-app:latest             # Docker image we will build
+    image: devops-frontend:latest          # Docker image we will build
     imagePullPolicy: Never                 # Use local Minikube image (don't pull from Docker Hub)
     ports:
     - containerPort: 80                    # nginx listens on port 80
@@ -50,7 +50,7 @@ spec:
   # Connects to MySQL using localhost:3306.
   # ==========================================
   - name: backend                          # Container name
-    image: backend-app:latest              # Docker image we will build
+    image: devops-backend:latest           # Docker image we will build
     imagePullPolicy: Never                 # Use local Minikube image
     ports:
     - containerPort: 3000                  # Express server listens on port 3000
